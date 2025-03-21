@@ -28,6 +28,21 @@ class FileUploader extends HTMLElement {
 				gap: 5px;
 				width: 300px;
       }
+			.closeButton {
+				background: rgba(255, 255, 255, 0.3);
+				border: none;
+				padding: 5px;
+				line-height: 0;
+				border-radius: 9999px;
+				cursor: pointer;
+				font-size: 26px;
+				color: white;
+				transition: all 0.2s ease-in-out;
+				align-self: flex-end;
+			}
+			.closeButton:hover {
+				background: rgba(255, 255, 255, 0.4);
+			}
 			.headlineWrapper {
 				display: flex;
 				flex-direction: column;
@@ -81,6 +96,20 @@ class FileUploader extends HTMLElement {
 		const formContainer = document.createElement("div");
 		formContainer.className = "formContainer";
 
+		// Кнопка закрытия формы
+		const closeButton = document.createElement("button");
+		const closeCrossIcon = document.createElement("img");
+		closeCrossIcon.src = cross;
+		closeCrossIcon.alt = "Clear";
+		closeCrossIcon.style.filter = "invert(100%) saturate(100%)";
+		closeButton.className = "closeButton";
+		closeButton.appendChild(closeCrossIcon);
+		closeButton.addEventListener("click", () => {
+			console.log("close");
+		});
+
+		formContainer.appendChild(closeButton);
+
 		// Заголовки
 		const headlineWrapper = document.createElement("div");
 		headlineWrapper.className = "headlineWrapper";
@@ -103,11 +132,11 @@ class FileUploader extends HTMLElement {
 		fileNameInputWrapper.className = "fileNameInputWrapper";
 
 		const clearFieldButton = document.createElement("button");
-		const crossIcon = document.createElement("img");
-		crossIcon.src = cross;
-		crossIcon.alt = "Clear";
-		crossIcon.style.filter = "invert(40%)";
-		clearFieldButton.appendChild(crossIcon);
+		const clearCrossIcon = document.createElement("img");
+		clearCrossIcon.src = cross;
+		clearCrossIcon.alt = "Clear";
+		clearCrossIcon.style.filter = "invert(40%)";
+		clearFieldButton.appendChild(clearCrossIcon);
 		clearFieldButton.className = "clearFieldButton";
 
 		const fileNameInput = document.createElement("input");
@@ -119,7 +148,7 @@ class FileUploader extends HTMLElement {
 		fileNameInput.addEventListener("input", () => {
 			this.isTitleWriten = !!fileNameInput.value;
 			fileNameInput.style.color = this.isTitleWriten ? "#5F5CF0" : "#A5A5A5";
-			crossIcon.style.filter = this.isTitleWriten
+			clearCrossIcon.style.filter = this.isTitleWriten
 				? "invert(37%) sepia(92%) saturate(5000%) hue-rotate(226deg) brightness(90%) contrast(97%)"
 				: "invert(40%)";
 			headlineTwo.textContent = this.isTitleWriten
