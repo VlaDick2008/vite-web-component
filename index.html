@@ -7,7 +7,18 @@
     <title>Vite + TS</title>
   </head>
   <body>
-    <file-uploader></file-uploader>
+    <div class="main-container">
+      <file-uploader></file-uploader>
+    </div>
     <script type="module" src="/src/main.ts"></script>
+    <style>
+      .main-container {
+        display: flex;
+        height: 100vh;
+        justify-content: center;
+        align-items: center;
+        background-color: #ccccce;
+      }
+    </style>
   </body>
 </html>
