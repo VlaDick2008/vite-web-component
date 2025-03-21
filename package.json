@@ -9,7 +9,13 @@
     "preview": "vite preview"
   },
   "devDependencies": {
+    "@biomejs/biome": "1.9.4",
     "typescript": "~5.7.2",
     "vite": "^6.2.0"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.0.15",
+    "install": "^0.13.0",
+    "tailwindcss": "^4.0.15"
   }
 }
