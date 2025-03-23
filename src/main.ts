@@ -1,5 +1,6 @@
 import "./normalize.css";
 import cross from "/cross.svg?url";
+import drop from "/docs-pic.svg?url";
 
 class FileUploader extends HTMLElement {
 	private shadow: ShadowRoot;
@@ -14,6 +15,7 @@ class FileUploader extends HTMLElement {
 	}
 
 	private render(): void {
+		// == Вёрстка ==
 		// Стилизация
 		const style = document.createElement("style");
 		style.textContent = `
@@ -25,8 +27,9 @@ class FileUploader extends HTMLElement {
 				padding: 13px;
 				color: white;
 				text-align: center;
-				gap: 5px;
+				gap: 10px;
 				width: 300px;
+				position: relative;
       }
 			.closeButton {
 				background: rgba(255, 255, 255, 0.3);
@@ -39,6 +42,8 @@ class FileUploader extends HTMLElement {
 				color: white;
 				transition: all 0.2s ease-in-out;
 				align-self: flex-end;
+				position: absolute;
+				right: 13px;
 			}
 			.closeButton:hover {
 				background: rgba(255, 255, 255, 0.4);
@@ -46,6 +51,7 @@ class FileUploader extends HTMLElement {
 			.headlineWrapper {
 				display: flex;
 				flex-direction: column;
+				margin-top: 20px;
 			}
       .headlineOne {
         font-size: 20px;
@@ -62,7 +68,6 @@ class FileUploader extends HTMLElement {
 			.fileNameInputWrapper {
 				position: relative;
 				width: 100%;
-				
 			}
 			.fileNameInput {
 				font-size: 17px;
@@ -89,6 +94,21 @@ class FileUploader extends HTMLElement {
 				color: #A5A5A5;
 				transition: all 0.2s ease-in-out;
 			}
+			.dropZone {
+				width: 100%;
+				padding: 50px 0;
+				gap: 22px;
+				background: rgba(255, 255, 255, 0.3);
+				border: 1px solid #A5A5A5;
+				border-radius: 30px;
+				display: flex;
+				flex-direction: column-reverse;
+				cursor: pointer;
+				justify-content: center;
+				align-items: center;
+				font-size: 14px;
+				color: #5F5CF0;
+			}
     `;
 		this.shadow.appendChild(style);
 
@@ -103,10 +123,8 @@ class FileUploader extends HTMLElement {
 		closeCrossIcon.alt = "Clear";
 		closeCrossIcon.style.filter = "invert(100%) saturate(100%)";
 		closeButton.className = "closeButton";
+
 		closeButton.appendChild(closeCrossIcon);
-		closeButton.addEventListener("click", () => {
-			console.log("close");
-		});
 
 		formContainer.appendChild(closeButton);
 
@@ -142,25 +160,9 @@ class FileUploader extends HTMLElement {
 		const fileNameInput = document.createElement("input");
 		fileNameInput.type = "text";
 		fileNameInput.id = "fileName";
+		fileNameInput.setAttribute("form", "uploadForm");
 		fileNameInput.placeholder = "Название файла";
 		fileNameInput.className = "fileNameInput";
-
-		fileNameInput.addEventListener("input", () => {
-			this.isTitleWriten = !!fileNameInput.value;
-			fileNameInput.style.color = this.isTitleWriten ? "#5F5CF0" : "#A5A5A5";
-			clearCrossIcon.style.filter = this.isTitleWriten
-				? "invert(37%) sepia(92%) saturate(5000%) hue-rotate(226deg) brightness(90%) contrast(97%)"
-				: "invert(40%)";
-			headlineTwo.textContent = this.isTitleWriten
-				? "Перенесите ваш файл в область ниже"
-				: "Перед загрузкой дайте имя файлу";
-		});
-
-		clearFieldButton.onclick = () => {
-			fileNameInput.value = "";
-			this.isTitleWriten = false;
-			headlineTwo.textContent = "Перед загрузкой дайте имя файлу";
-		};
 
 		fileNameInputWrapper.appendChild(fileNameInput);
 		fileNameInputWrapper.appendChild(clearFieldButton);
@@ -172,8 +174,67 @@ class FileUploader extends HTMLElement {
 		form.id = "uploadForm";
 		formContainer.appendChild(form);
 
+		// Поле для файла
+		const fileInput = document.createElement("input");
+		fileInput.type = "file";
+		fileInput.accept = ".txt,.json,.csv";
+		fileInput.style.display = "none";
+
+		const dropZone = document.createElement("div");
+		dropZone.className = "dropZone";
+		dropZone.textContent = "Перенесите ваш в файл в эту область";
+
+		const dropZoneImg = document.createElement("img");
+		dropZoneImg.src = drop;
+		dropZoneImg.alt = "Drop";
+
+		dropZone.appendChild(dropZoneImg);
+
+		form.appendChild(fileInput);
+		form.appendChild(dropZone);
+
 		this.shadow.appendChild(formContainer);
+
+		// == Функционал ==
+		// Кнопка закрытия формы
+		closeButton.addEventListener("click", () => {
+			console.log("close");
+		});
+
+		// Изменение цвета в зависимости от наличия текста
+		fileNameInput.addEventListener("input", () => {
+			this.isTitleWriten = !!fileNameInput.value;
+			fileNameInput.style.color = this.isTitleWriten ? "#5F5CF0" : "#A5A5A5";
+			clearCrossIcon.style.filter = this.isTitleWriten
+				? "invert(37%) sepia(92%) saturate(5000%) hue-rotate(226deg) brightness(90%) contrast(97%)"
+				: "invert(40%)";
+			headlineTwo.textContent = this.isTitleWriten
+				? "Перенесите ваш файл в область ниже"
+				: "Перед загрузкой дайте имя файлу";
+		});
+
+		// Кнопка очистки поля имени файла
+		clearFieldButton.onclick = () => {
+			fileNameInput.value = "";
+			fileNameInput.style.color = "#A5A5A5";
+			clearCrossIcon.style.filter = "invert(40%)";
+			this.isTitleWriten = false;
+			headlineTwo.textContent = "Перед загрузкой дайте имя файлу";
+		};
+
+		// Отправка формы
+		form.addEventListener("submit", (e) => {
+			e.preventDefault();
+			this.handleUpload();
+		});
+
+		// Обработка файла в input
+		fileInput.addEventListener("change", () => {
+			console.log("file change");
+		});
 	}
+
+	private handleUpload(): void {}
 }
 
 customElements.define("file-uploader", FileUploader);
