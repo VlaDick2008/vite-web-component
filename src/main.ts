@@ -30,6 +30,7 @@ class FileUploader extends HTMLElement {
 				gap: 10px;
 				width: 300px;
 				position: relative;
+				box-shadow: 1px 1px 25px 0px rgba(0,0,0,0.75);
       }
 			.closeButton {
 				background: rgba(255, 255, 255, 0.3);
@@ -74,8 +75,7 @@ class FileUploader extends HTMLElement {
 				font-weight: 500;
 				border-radius: 10px;
 				padding: 6px 9px;
-				border-color: #A5A5A5;
-				border-width: 1px;
+				border: 1px solid #A5A5A5;
 				width: 92%;
 				color: #A5A5A5;
 				transition: all 0.2s ease-in-out;
@@ -108,6 +108,25 @@ class FileUploader extends HTMLElement {
 				align-items: center;
 				font-size: 14px;
 				color: #5F5CF0;
+			}
+			.submitButton {
+				background-color: #5F5CF0;
+				width: 100%;
+				padding: 17px 0;
+				margin-top: 10px;
+				border-radius: 9999px;
+				border: none;
+				color: white;
+				font-size: 20px;
+				cursor: pointer;
+				transition: all 0.2s ease-in-out;
+			}
+			.submitButton:hover {
+				background-color: #3e3ed8;
+			}
+			.submitButton:disabled {
+				background-color: #BBB9D2;
+				cursor: not-allowed;
 			}
     `;
 		this.shadow.appendChild(style);
@@ -195,6 +214,14 @@ class FileUploader extends HTMLElement {
 
 		this.shadow.appendChild(formContainer);
 
+		// Кнопка отправки
+		const submitButton = document.createElement("button");
+		submitButton.type = "submit";
+		submitButton.className = "submitButton";
+		submitButton.textContent = "Отправить";
+		submitButton.disabled = !this.isTitleWriten;
+		form.appendChild(submitButton);
+
 		// == Функционал ==
 		// Кнопка закрытия формы
 		closeButton.addEventListener("click", () => {
@@ -204,6 +231,7 @@ class FileUploader extends HTMLElement {
 		// Изменение цвета в зависимости от наличия текста
 		fileNameInput.addEventListener("input", () => {
 			this.isTitleWriten = !!fileNameInput.value;
+
 			fileNameInput.style.color = this.isTitleWriten ? "#5F5CF0" : "#A5A5A5";
 			clearCrossIcon.style.filter = this.isTitleWriten
 				? "invert(37%) sepia(92%) saturate(5000%) hue-rotate(226deg) brightness(90%) contrast(97%)"
@@ -211,6 +239,8 @@ class FileUploader extends HTMLElement {
 			headlineTwo.textContent = this.isTitleWriten
 				? "Перенесите ваш файл в область ниже"
 				: "Перед загрузкой дайте имя файлу";
+
+			submitButton.disabled = !this.isTitleWriten;
 		});
 
 		// Кнопка очистки поля имени файла
