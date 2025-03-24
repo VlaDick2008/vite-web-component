@@ -4,12 +4,14 @@
 
 ## Запуск
 
-Установите Bun, он используется как пакетный менеджер:
-
-[text](https://bun.sh/)
+Установите Bun, он используется как пакетный менеджер: [https://bun.sh/](https://bun.sh/)
 
 Установка зависимостей:
-[bash](bun install)
+```bash
+bun install
+```
 
 Запуск проекта:
-[bash](bun run dev)
+```bash
+bun run dev
+```
