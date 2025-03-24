@@ -35,7 +35,7 @@ class FileUploader extends HTMLElement {
 			.closeButton {
 				background: rgba(255, 255, 255, 0.3);
 				border: none;
-				padding: 5px;
+				padding: 8px;
 				line-height: 0;
 				border-radius: 9999px;
 				cursor: pointer;
@@ -56,7 +56,7 @@ class FileUploader extends HTMLElement {
 			}
       .headlineOne {
         font-size: 20px;
-        font-weight: 500;
+        font-weight: 600;
 				margin: 0;
 				padding: 0;
       }
@@ -72,7 +72,6 @@ class FileUploader extends HTMLElement {
 			}
 			.fileNameInput {
 				font-size: 17px;
-				font-weight: 500;
 				border-radius: 10px;
 				padding: 6px 9px;
 				border: 1px solid #A5A5A5;
@@ -85,8 +84,8 @@ class FileUploader extends HTMLElement {
 			}
 			.clearFieldButton {
 				position: absolute;
-				right: 2px;
-				top: 2px;
+				right: 6px;
+				top: -1px;
 				background: none;
 				border: none;
 				cursor: pointer;
@@ -107,6 +106,7 @@ class FileUploader extends HTMLElement {
 				justify-content: center;
 				align-items: center;
 				font-size: 14px;
+				font-weight: 400;
 				color: #5F5CF0;
 			}
 			.submitButton {
@@ -128,6 +128,41 @@ class FileUploader extends HTMLElement {
 				background-color: #BBB9D2;
 				cursor: not-allowed;
 			}
+			.progressBarWrapper {
+				border: 1px solid #A5A5A5;
+				border-radius: 10px;
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				padding: 3px;
+				margin-top: 10px;
+				background-color: white;
+				color: #5F5CF0;
+				gap: 15px;
+			}
+			.progressBarIndicator {
+				background-color: #5F5CF0;
+				border-radius: 10px;
+				height: 30px;
+				width: 55px;
+			}
+			.progressBarLabel {
+				font-size: 10px;
+				border: none;
+				background-color: white;
+			}
+			.progressBar {
+				width: 100%;
+			}
+			.progressBarCancelButton {
+				background: none;
+				border: none;
+				cursor: pointer;
+				font-size: 26px;
+				filter: invert(37%) sepia(92%) saturate(5000%) hue-rotate(226deg) brightness(90%) contrast(97%);
+				transition: all 0.2s ease-in-out;
+				line-height: 0;
+			}
     `;
 		this.shadow.appendChild(style);
 
@@ -140,7 +175,6 @@ class FileUploader extends HTMLElement {
 		const closeCrossIcon = document.createElement("img");
 		closeCrossIcon.src = cross;
 		closeCrossIcon.alt = "Clear";
-		closeCrossIcon.style.filter = "invert(100%) saturate(100%)";
 		closeButton.className = "closeButton";
 
 		closeButton.appendChild(closeCrossIcon);
@@ -198,29 +232,80 @@ class FileUploader extends HTMLElement {
 		fileInput.type = "file";
 		fileInput.accept = ".txt,.json,.csv";
 		fileInput.style.display = "none";
+		fileInput.disabled = !this.isTitleWriten;
 
 		const dropZone = document.createElement("div");
 		dropZone.className = "dropZone";
-		dropZone.textContent = "Перенесите ваш в файл в эту область";
 
 		const dropZoneImg = document.createElement("img");
 		dropZoneImg.src = drop;
 		dropZoneImg.alt = "Drop";
 
+		const dropZoneText = document.createElement("span");
+		dropZoneText.textContent = "Перенесите ваш в файл в эту область";
+
+		dropZone.appendChild(dropZoneText);
 		dropZone.appendChild(dropZoneImg);
 
 		form.appendChild(fileInput);
 		form.appendChild(dropZone);
 
-		this.shadow.appendChild(formContainer);
+		// Полоса загрузки
+		const progressBarWrapper = document.createElement("div");
+		progressBarWrapper.className = "progressBarWrapper";
+
+		const progressBarIndicator = document.createElement("div");
+		progressBarIndicator.className = "progressBarIndicator";
+
+		const progressBarInnerWrapper = document.createElement("div");
+		progressBarInnerWrapper.style.display = "flex";
+		progressBarInnerWrapper.style.flexDirection = "column";
+		progressBarInnerWrapper.style.alignItems = "baseline";
+		progressBarInnerWrapper.style.width = "100%";
+
+		const progressBarLabelWrapper = document.createElement("div");
+		progressBarLabelWrapper.style.display = "flex";
+		progressBarLabelWrapper.style.justifyContent = "space-between";
+		progressBarLabelWrapper.style.width = "100%";
+		const progressBarLabel = document.createElement("span");
+		progressBarLabel.className = "progressBarLabel";
+		progressBarLabel.textContent = "Имя файла";
+		const progressBarLabelPercent = document.createElement("span");
+		progressBarLabelPercent.className = "progressBarLabel";
+		progressBarLabelPercent.textContent = "50%";
+
+		const progressBar = document.createElement("progress");
+		progressBar.className = "progressBar";
+		progressBar.max = 100;
+		progressBar.value = 50;
+
+		const progressBarCancelButton = document.createElement("button");
+		progressBarCancelButton.className = "progressBarCancelButton";
+		const progressBarCancelCrossIcon = document.createElement("img");
+		progressBarCancelCrossIcon.src = cross;
+		progressBarCancelCrossIcon.alt = "Clear";
+
+		progressBarLabelWrapper.appendChild(progressBarLabel);
+		progressBarCancelButton.appendChild(progressBarCancelCrossIcon);
+		progressBarLabelWrapper.appendChild(progressBarLabelPercent);
+		progressBarInnerWrapper.appendChild(progressBarLabelWrapper);
+		progressBarInnerWrapper.appendChild(progressBar);
+
+		progressBarWrapper.appendChild(progressBarIndicator);
+		progressBarWrapper.appendChild(progressBarInnerWrapper);
+		progressBarWrapper.appendChild(progressBarCancelButton);
+
+		form.appendChild(progressBarWrapper);
 
 		// Кнопка отправки
 		const submitButton = document.createElement("button");
 		submitButton.type = "submit";
 		submitButton.className = "submitButton";
 		submitButton.textContent = "Отправить";
-		submitButton.disabled = !this.isTitleWriten;
+		submitButton.disabled = true;
 		form.appendChild(submitButton);
+
+		this.shadow.appendChild(formContainer);
 
 		// == Функционал ==
 		// Кнопка закрытия формы
@@ -240,31 +325,71 @@ class FileUploader extends HTMLElement {
 				? "Перенесите ваш файл в область ниже"
 				: "Перед загрузкой дайте имя файлу";
 
-			submitButton.disabled = !this.isTitleWriten;
+			fileInput.disabled = !this.isTitleWriten;
 		});
 
 		// Кнопка очистки поля имени файла
 		clearFieldButton.onclick = () => {
+			this.isTitleWriten = false;
 			fileNameInput.value = "";
 			fileNameInput.style.color = "#A5A5A5";
 			clearCrossIcon.style.filter = "invert(40%)";
-			this.isTitleWriten = false;
 			headlineTwo.textContent = "Перед загрузкой дайте имя файлу";
+			submitButton.disabled = true;
 		};
 
 		// Отправка формы
 		form.addEventListener("submit", (e) => {
 			e.preventDefault();
-			this.handleUpload();
+			this.handleUpload(e);
 		});
 
-		// Обработка файла в input
+		// Обработка файла в input и dropZone
 		fileInput.addEventListener("change", () => {
 			console.log("file change");
 		});
+
+		dropZone.addEventListener("click", (e) => {
+			fileInput.click();
+		});
+
+		dropZone.addEventListener("dragover", (e) => {
+			e.preventDefault();
+			dropZone.style.opacity = "0.5";
+		});
+		dropZone.addEventListener("dragleave", (e) => {
+			e.preventDefault();
+			dropZone.style.opacity = "1";
+		});
+		dropZone.addEventListener("drop", (e) => {
+			e.preventDefault();
+			dropZone.style.opacity = "1";
+			if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
+				const isFileOkay = this.validateFile(e.dataTransfer.files[0]);
+
+				dropZoneText.textContent =
+					isFileOkay === true
+						? "Перенесите ваш в файл в эту область"
+						: (isFileOkay as string);
+			}
+		});
 	}
 
-	private handleUpload(): void {}
+	private validateFile(file: File): boolean | string {
+		const allowedExtensions = ["txt", "json", "csv"];
+		const fileExtention = file.name.split(".").pop()?.toLowerCase();
+
+		if (!fileExtention || !allowedExtensions.includes(fileExtention)) {
+			return "Неверный формат файла";
+		}
+		if (file.size > 1024) {
+			return "Файл слишком большой";
+		}
+
+		return true;
+	}
+
+	private handleUpload(e: Event): void {}
 }
 
 customElements.define("file-uploader", FileUploader);
