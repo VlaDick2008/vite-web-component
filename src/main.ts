@@ -1,3 +1,5 @@
+import axios from "axios";
+
 import "./normalize.css";
 import cross from "/cross.svg?url";
 import drop from "/docs-pic.svg?url";
@@ -5,11 +7,21 @@ import drop from "/docs-pic.svg?url";
 class FileUploader extends HTMLElement {
 	private shadow: ShadowRoot;
 	private isTitleWriten: boolean;
+	private formSendStatus: boolean | unknown;
+	private apiRes:
+		| {
+				message: string;
+				filename: string;
+				nameField: string;
+				timestamp: string;
+		  }
+		| { error: string };
 
 	constructor() {
 		super();
 
 		this.isTitleWriten = false;
+		this.apiRes = { error: "" };
 		this.shadow = this.attachShadow({ mode: "open" });
 		this.render();
 	}
@@ -217,7 +229,7 @@ class FileUploader extends HTMLElement {
 
 		const fileNameInput = document.createElement("input");
 		fileNameInput.type = "text";
-		fileNameInput.id = "fileName";
+		fileNameInput.id = "fileNameInput";
 		fileNameInput.setAttribute("form", "uploadForm");
 		fileNameInput.placeholder = "Название файла";
 		fileNameInput.className = "fileNameInput";
@@ -236,7 +248,9 @@ class FileUploader extends HTMLElement {
 
 		// Поле для файла
 		const fileInput = document.createElement("input");
+		fileInput.id = "fileInput";
 		fileInput.type = "file";
+		fileNameInput.setAttribute("form", "uploadForm");
 		fileInput.accept = ".txt,.json,.csv";
 		fileInput.disabled = true;
 		fileInput.style.display = "none";
@@ -312,6 +326,12 @@ class FileUploader extends HTMLElement {
 		submitButton.disabled = true;
 		form.appendChild(submitButton);
 
+		const responceBlock = document.createElement("div");
+		responceBlock.className = "responceBlock";
+		responceBlock.style.color = "black";
+
+		form.appendChild(responceBlock);
+
 		this.shadow.appendChild(formContainer);
 
 		// == Функционал ==
@@ -360,7 +380,15 @@ class FileUploader extends HTMLElement {
 		// Отправка формы
 		form.addEventListener("submit", (e) => {
 			e.preventDefault();
-			this.handleUpload(e);
+
+			submitButton.disabled = true;
+			if (this.isTitleWriten && fileInput.files && fileInput.files.length > 0) {
+				this.handleUpload(e, fileInput.files[0], fileNameInput.value);
+
+				fileInput.value = "";
+				fileNameInput.value = "";
+				return;
+			}
 		});
 
 		// Обработка файла в input и dropZone и отслеживание ввода имени файла
@@ -385,6 +413,7 @@ class FileUploader extends HTMLElement {
 				return;
 			}
 
+			// Анимации при загрузке файла
 			fileNameInputWrapper.style.translate = "translateY(20px)";
 			fileNameInputWrapper.style.opacity = "0";
 			fileNameInputWrapper.style.position = "absolute";
@@ -402,11 +431,9 @@ class FileUploader extends HTMLElement {
 
 			progressBarAnimation();
 		});
-
 		dropZone.addEventListener("click", (e) => {
 			fileInput.click();
 		});
-
 		dropZone.addEventListener("dragover", (e) => {
 			e.preventDefault();
 			dropZone.style.opacity = "0.5";
@@ -443,8 +470,9 @@ class FileUploader extends HTMLElement {
 			}
 		});
 
+		// Анимация полосы загрузки и связаная с ней логика
 		const progressBarAnimation = () => {
-			//Шкала загрузки
+			// Смотритель для отслеживания прогресса
 			const progressObserver = new MutationObserver((mutations) => {
 				for (const mutation of mutations) {
 					if (
@@ -462,6 +490,7 @@ class FileUploader extends HTMLElement {
 				attributes: true,
 			});
 
+			// Анимация
 			let progress = 0;
 			const progressInterval = setInterval(() => {
 				if (progress < 100) {
@@ -471,8 +500,19 @@ class FileUploader extends HTMLElement {
 				} else {
 					clearInterval(progressInterval);
 				}
-			}, 5);
+			}, 2);
 		};
+
+		// Кастомный ивент для отображения ответа от API
+		this.addEventListener("responceBlock", () => {
+			responceBlock.textContent = JSON.stringify(this.apiRes);
+			console.log(this.formSendStatus);
+
+			if (this.formSendStatus === false) {
+				formContainer.style.backgroundColor =
+					"linear-gradient(to bottom, #F05C5C, #8F8DF4);";
+			}
+		});
 	}
 
 	// Проверка на валидность файла. Возвращает строку для отображения в drag and drop окне в случае ошибки, и тип файла в случае успеха
@@ -483,14 +523,56 @@ class FileUploader extends HTMLElement {
 		if (!fileExtention || !allowedExtensions.includes(fileExtention)) {
 			return ["Неверный формат файла", false];
 		}
-		if (file.size > 1024) {
-			return ["Файл слишком большой", false];
-		}
+		// if (file.size > 1024) {
+		// 	return ["Файл слишком большой", false];
+		// }
 		return [fileExtention, true];
 	}
 
-	private handleUpload(e: Event): void {
-		console.log("send gile");
+	// Отправка файла
+	private async handleUpload(e: Event, file: File, fileName: string) {
+		const responceBlock = new CustomEvent("responceBlock");
+		try {
+			if (!file || !fileName) {
+				throw new Error();
+			}
+
+			const formData = new FormData();
+			formData.append("file", file);
+			formData.append("name", fileName);
+
+			await axios
+				.post(
+					"https://file-upload-server-mc26.onrender.com/api/v1/upload",
+					{
+						file: file,
+						name: fileName,
+					},
+					{
+						headers: {
+							"Content-Type": "multipart/form-data",
+						},
+					},
+				)
+				.then((res) => {
+					this.apiRes = res.data;
+					this.formSendStatus = true;
+					return;
+				})
+				.catch((err) => {
+					this.apiRes = err.response.data;
+					this.formSendStatus = false;
+					throw new Error();
+				});
+
+			this.formSendStatus = true;
+		} catch (err) {
+			console.error("Error sending file");
+			this.formSendStatus = false;
+			return;
+		} finally {
+			this.dispatchEvent(responceBlock);
+		}
 	}
 }
 
