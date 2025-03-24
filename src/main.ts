@@ -361,7 +361,30 @@ class FileUploader extends HTMLElement {
 		// == Функционал ==
 		// Кнопка закрытия формы
 		closeButton.addEventListener("click", () => {
-			console.log("close");
+			this.isTitleWriten = false;
+			this.formSendStatus = undefined;
+
+			fileInput.value = "";
+			fileNameInput.value = "";
+			headlineTwo.textContent = "Перед загрузкой дайте имя файлу";
+			submitButton.disabled = true;
+
+			formContainer.style.background = "";
+			headlineWrapper.style.display = "flex";
+			fileNameInputWrapper.style.display = "flex";
+			form.style.display = "flex";
+			responseBlock.style.display = "none";
+
+			fileNameInputWrapper.style.translate = "translateY(-20px)";
+			fileNameInputWrapper.style.opacity = "1";
+			fileNameInputWrapper.style.visibility = "";
+			fileNameInputWrapper.style.position = "";
+
+			dropZone.style.opacity = "0.5";
+			dropZone.style.cursor = "not-allowed";
+
+			progressBarWrapper.style.visibility = "hidden";
+			progressBarWrapper.style.position = "absolute";
 		});
 
 		// Изменение цвета в зависимости от наличия текста и отслеживание ввода имени файла
@@ -530,7 +553,10 @@ class FileUploader extends HTMLElement {
 
 		// Кастомный ивент для отображения ответа от API
 		this.addEventListener("responseBlock", () => {
-			responseBlockDescription.textContent = JSON.stringify(this.apiRes);
+			const apiResArray = Object.entries(this.apiRes).map(
+				([key, value]) => `${key}: ${value}`,
+			);
+			responseBlockDescription.textContent = apiResArray.join("\n");
 
 			if (this.formSendStatus) {
 				responseBlockHeading.textContent = "Файл успешно загружен";
@@ -558,9 +584,9 @@ class FileUploader extends HTMLElement {
 		if (!fileExtention || !allowedExtensions.includes(fileExtention)) {
 			return ["Неверный формат файла", false];
 		}
-		// if (file.size > 1024) {
-		// 	return ["Файл слишком большой", false];
-		// }
+		if (file.size > 1024) {
+			return ["Файл слишком большой", false];
+		}
 		return [fileExtention, true];
 	}
 
