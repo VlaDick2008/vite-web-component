@@ -417,10 +417,13 @@ class FileUploader extends HTMLElement {
 		// Кнопка очистки поля имени файла
 		clearFieldButton.onclick = () => {
 			this.isTitleWriten = false;
+			fileInput.disabled = true;
 			fileNameInput.value = "";
 			fileNameInput.style.color = "#A5A5A5";
 			clearCrossIcon.style.filter = "invert(40%)";
 			headlineTwo.textContent = "Перед загрузкой дайте имя файлу";
+			dropZone.style.opacity = "0.5";
+			dropZone.style.cursor = "not-allowed";
 			submitButton.disabled = true;
 		};
 
