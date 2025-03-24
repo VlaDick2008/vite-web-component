@@ -153,6 +153,7 @@ class FileUploader extends HTMLElement {
 			}
 			.progressBar {
 				width: 100%;
+				height: 10px;
 			}
 			.progressBarCancelButton {
 				background: none;
@@ -231,11 +232,13 @@ class FileUploader extends HTMLElement {
 		const fileInput = document.createElement("input");
 		fileInput.type = "file";
 		fileInput.accept = ".txt,.json,.csv";
+		fileInput.disabled = true;
 		fileInput.style.display = "none";
-		fileInput.disabled = !this.isTitleWriten;
 
 		const dropZone = document.createElement("div");
 		dropZone.className = "dropZone";
+		dropZone.style.opacity = "0.5";
+		dropZone.style.cursor = "not-allowed";
 
 		const dropZoneImg = document.createElement("img");
 		dropZoneImg.src = drop;
@@ -263,21 +266,19 @@ class FileUploader extends HTMLElement {
 		progressBarInnerWrapper.style.alignItems = "baseline";
 		progressBarInnerWrapper.style.width = "100%";
 
+		const progressBar = document.createElement("progress");
+		progressBar.className = "progressBar";
+		progressBar.max = 100;
+		progressBar.value = 0;
+
 		const progressBarLabelWrapper = document.createElement("div");
 		progressBarLabelWrapper.style.display = "flex";
 		progressBarLabelWrapper.style.justifyContent = "space-between";
 		progressBarLabelWrapper.style.width = "100%";
 		const progressBarLabel = document.createElement("span");
 		progressBarLabel.className = "progressBarLabel";
-		progressBarLabel.textContent = "Имя файла";
 		const progressBarLabelPercent = document.createElement("span");
 		progressBarLabelPercent.className = "progressBarLabel";
-		progressBarLabelPercent.textContent = "50%";
-
-		const progressBar = document.createElement("progress");
-		progressBar.className = "progressBar";
-		progressBar.max = 100;
-		progressBar.value = 50;
 
 		const progressBarCancelButton = document.createElement("button");
 		progressBarCancelButton.className = "progressBarCancelButton";
@@ -313,9 +314,19 @@ class FileUploader extends HTMLElement {
 			console.log("close");
 		});
 
-		// Изменение цвета в зависимости от наличия текста
+		// Изменение цвета в зависимости от наличия текста и отслеживание ввода имени файла
 		fileNameInput.addEventListener("input", () => {
 			this.isTitleWriten = !!fileNameInput.value;
+
+			if (this.isTitleWriten) {
+				fileInput.disabled = false;
+				dropZone.style.opacity = "1";
+				dropZone.style.cursor = "pointer";
+			} else {
+				fileInput.disabled = true;
+				dropZone.style.opacity = "0.5";
+				dropZone.style.cursor = "not-allowed";
+			}
 
 			fileNameInput.style.color = this.isTitleWriten ? "#5F5CF0" : "#A5A5A5";
 			clearCrossIcon.style.filter = this.isTitleWriten
@@ -325,7 +336,9 @@ class FileUploader extends HTMLElement {
 				? "Перенесите ваш файл в область ниже"
 				: "Перед загрузкой дайте имя файлу";
 
-			fileInput.disabled = !this.isTitleWriten;
+			if (fileInput.files && fileInput.files.length > 0 && this.isTitleWriten) {
+				submitButton.disabled = false;
+			}
 		});
 
 		// Кнопка очистки поля имени файла
@@ -344,9 +357,21 @@ class FileUploader extends HTMLElement {
 			this.handleUpload(e);
 		});
 
-		// Обработка файла в input и dropZone
+		// Обработка файла в input и dropZone и отслеживание ввода имени файла
 		fileInput.addEventListener("change", () => {
-			console.log("file change");
+			if (fileInput.disabled) {
+				dropZoneText.textContent = "Дайте имя вашему файлу";
+			}
+
+			if (fileInput.files && fileInput.files.length > 0) {
+				progressBarLabel.textContent = `${fileNameInput.value}.${this.validateFile(fileInput.files[0])[0]}`;
+			}
+
+			if (fileInput.files && fileInput.files.length > 0 && this.isTitleWriten) {
+				submitButton.disabled = false;
+			}
+
+			progressBarAnimation();
 		});
 
 		dropZone.addEventListener("click", (e) => {
@@ -359,34 +384,81 @@ class FileUploader extends HTMLElement {
 		});
 		dropZone.addEventListener("dragleave", (e) => {
 			e.preventDefault();
-			dropZone.style.opacity = "1";
+			if (!fileInput.disabled) {
+				dropZone.style.opacity = "1";
+			}
 		});
 		dropZone.addEventListener("drop", (e) => {
 			e.preventDefault();
-			dropZone.style.opacity = "1";
-			if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
-				const isFileOkay = this.validateFile(e.dataTransfer.files[0]);
 
-				dropZoneText.textContent =
-					isFileOkay === true
-						? "Перенесите ваш в файл в эту область"
-						: (isFileOkay as string);
+			if (fileInput.disabled) {
+				dropZoneText.textContent = "Дайте имя вашему файлу";
+				return;
 			}
+
+			dropZone.style.opacity = "1";
+
+			if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
+				const file = e.dataTransfer.files[0];
+				const isFileValid = this.validateFile(e.dataTransfer.files[0]);
+				console.log(isFileValid[1]);
+
+				if (!isFileValid[1]) {
+					dropZoneText.textContent = isFileValid[0];
+					return;
+				}
+
+				const dt = new DataTransfer();
+				dt.items.add(file);
+				fileInput.files = dt.files;
+				fileInput.dispatchEvent(new Event("change"));
+			}
+
+			console.log(fileInput.files);
 		});
+
+		const progressBarAnimation = () => {
+			// Шкала загрузки
+			// const progressObserver = new MutationObserver((mutations) => {
+			// 	for (const mutation of mutations) {
+			// 		if (
+			// 			mutation.type === "attributes" &&
+			// 			mutation.attributeName === "value"
+			// 		) {
+			// 			console.log("progress", `${progressBar.value}%`);
+			// 		}
+			// 	}
+			// });
+
+			// progressObserver.observe(progressBar, {
+			// 	attributes: true,
+			// });
+
+			let progress = 0;
+			const progressInterval = setInterval(() => {
+				if (progress < 100) {
+					progress++;
+					progressBar.value = progress;
+					progressBarLabelPercent.textContent = `${progress}%`;
+				} else {
+					clearInterval(progressInterval);
+				}
+			}, 5);
+		};
 	}
 
-	private validateFile(file: File): boolean | string {
+	// Проверка на валидность файла. Возвращает строку для отображения в drag and drop окне в случае ошибки, и тип файла в случае успеха
+	private validateFile(file: File): [string, boolean] {
 		const allowedExtensions = ["txt", "json", "csv"];
 		const fileExtention = file.name.split(".").pop()?.toLowerCase();
 
 		if (!fileExtention || !allowedExtensions.includes(fileExtention)) {
-			return "Неверный формат файла";
+			return ["Неверный формат файла", false];
 		}
 		if (file.size > 1024) {
-			return "Файл слишком большой";
+			return ["Файл слишком большой", false];
 		}
-
-		return true;
+		return [fileExtention, true];
 	}
 
 	private handleUpload(e: Event): void {}
