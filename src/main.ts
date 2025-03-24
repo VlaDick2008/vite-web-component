@@ -97,6 +97,7 @@ class FileUploader extends HTMLElement {
 				width: 100%;
 				padding: 50px 0;
 				gap: 22px;
+				flex: 1;
 				background: rgba(255, 255, 255, 0.3);
 				border: 1px solid #A5A5A5;
 				border-radius: 30px;
@@ -108,6 +109,7 @@ class FileUploader extends HTMLElement {
 				font-size: 14px;
 				font-weight: 400;
 				color: #5F5CF0;
+				transition: all 0.3s ease-out;
 			}
 			.submitButton {
 				background-color: #5F5CF0;
@@ -131,14 +133,16 @@ class FileUploader extends HTMLElement {
 			.progressBarWrapper {
 				border: 1px solid #A5A5A5;
 				border-radius: 10px;
-				display: flex;
 				justify-content: space-between;
 				align-items: center;
 				padding: 3px;
 				margin-top: 10px;
 				background-color: white;
+				display: flex;
 				color: #5F5CF0;
 				gap: 15px;
+				visibility: hidden;
+				position: absolute;
 			}
 			.progressBarIndicator {
 				background-color: #5F5CF0;
@@ -226,6 +230,8 @@ class FileUploader extends HTMLElement {
 		// Форма
 		const form = document.createElement("form");
 		form.id = "uploadForm";
+		form.style.display = "flex";
+		form.style.flexDirection = "column";
 		formContainer.appendChild(form);
 
 		// Поле для файла
@@ -359,17 +365,40 @@ class FileUploader extends HTMLElement {
 
 		// Обработка файла в input и dropZone и отслеживание ввода имени файла
 		fileInput.addEventListener("change", () => {
+			if (!fileInput.files || fileInput.files.length <= 0) {
+				dropZoneText.textContent = "Перенесите ваш в файл в эту область";
+				return;
+			}
+
+			if (!this.isTitleWriten) {
+				submitButton.disabled = true;
+				return;
+			}
+
 			if (fileInput.disabled) {
 				dropZoneText.textContent = "Дайте имя вашему файлу";
+				return;
 			}
 
-			if (fileInput.files && fileInput.files.length > 0) {
-				progressBarLabel.textContent = `${fileNameInput.value}.${this.validateFile(fileInput.files[0])[0]}`;
+			if (!this.validateFile(fileInput.files[0])[1]) {
+				dropZoneText.textContent = this.validateFile(fileInput.files[0])[0];
+				return;
 			}
 
-			if (fileInput.files && fileInput.files.length > 0 && this.isTitleWriten) {
-				submitButton.disabled = false;
-			}
+			fileNameInputWrapper.style.translate = "translateY(20px)";
+			fileNameInputWrapper.style.opacity = "0";
+			fileNameInputWrapper.style.position = "absolute";
+			fileNameInputWrapper.style.transition = "all 0.3s ease-out";
+
+			setTimeout(() => {
+				fileNameInputWrapper.style.visibility = "hidden";
+			}, 300);
+
+			progressBarWrapper.style.visibility = "visible";
+			progressBarWrapper.style.position = "relative";
+			progressBarWrapper.style.transition = "all 0.3s ease-out";
+
+			progressBarLabel.textContent = `${fileNameInput.value}.${this.validateFile(fileInput.files[0])[0]}`;
 
 			progressBarAnimation();
 		});
@@ -400,8 +429,7 @@ class FileUploader extends HTMLElement {
 
 			if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
 				const file = e.dataTransfer.files[0];
-				const isFileValid = this.validateFile(e.dataTransfer.files[0]);
-				console.log(isFileValid[1]);
+				const isFileValid = this.validateFile(file);
 
 				if (!isFileValid[1]) {
 					dropZoneText.textContent = isFileValid[0];
@@ -413,26 +441,26 @@ class FileUploader extends HTMLElement {
 				fileInput.files = dt.files;
 				fileInput.dispatchEvent(new Event("change"));
 			}
-
-			console.log(fileInput.files);
 		});
 
 		const progressBarAnimation = () => {
-			// Шкала загрузки
-			// const progressObserver = new MutationObserver((mutations) => {
-			// 	for (const mutation of mutations) {
-			// 		if (
-			// 			mutation.type === "attributes" &&
-			// 			mutation.attributeName === "value"
-			// 		) {
-			// 			console.log("progress", `${progressBar.value}%`);
-			// 		}
-			// 	}
-			// });
+			//Шкала загрузки
+			const progressObserver = new MutationObserver((mutations) => {
+				for (const mutation of mutations) {
+					if (
+						mutation.type === "attributes" &&
+						mutation.attributeName === "value"
+					) {
+						if (progressBar.value === 100) {
+							submitButton.disabled = false;
+						}
+					}
+				}
+			});
 
-			// progressObserver.observe(progressBar, {
-			// 	attributes: true,
-			// });
+			progressObserver.observe(progressBar, {
+				attributes: true,
+			});
 
 			let progress = 0;
 			const progressInterval = setInterval(() => {
@@ -461,7 +489,9 @@ class FileUploader extends HTMLElement {
 		return [fileExtention, true];
 	}
 
-	private handleUpload(e: Event): void {}
+	private handleUpload(e: Event): void {
+		console.log("send gile");
+	}
 }
 
 customElements.define("file-uploader", FileUploader);
