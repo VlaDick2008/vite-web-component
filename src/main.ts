@@ -32,7 +32,7 @@ class FileUploader extends HTMLElement {
 		const style = document.createElement("style");
 		style.textContent = `
       .formContainer {
-        background: linear-gradient(180deg, rgba(95,92,240,1) 0%, rgba(221,220,252,1) 69%, rgba(255,255,255,1) 100%);
+        background: linear-gradient(to bottom, #5F5CF0 0%, #DDDCFC 43%, #FFFFFF 100%);
         display: flex;
         flex-direction: column;
         border-radius: 16px;
@@ -43,6 +43,7 @@ class FileUploader extends HTMLElement {
 				width: 300px;
 				position: relative;
 				box-shadow: 1px 1px 25px 0px rgba(0,0,0,0.75);
+				transition: background-color 0.2s ease-in-out;
       }
 			.closeButton {
 				background: rgba(255, 255, 255, 0.3);
@@ -179,6 +180,23 @@ class FileUploader extends HTMLElement {
 				filter: invert(37%) sepia(92%) saturate(5000%) hue-rotate(226deg) brightness(90%) contrast(97%);
 				transition: all 0.2s ease-in-out;
 				line-height: 0;
+			}
+			.responceBlock {
+				display: flex;
+				flex-direction: column;
+				justify-content: center;
+				align-items: center;
+				display: none;
+				transition: all 0.2s ease-in-out;
+				padding: 50px 0;
+			}
+			.responceBlockHeading {
+				font-size: 20px;
+				font-weight: 600;
+			}
+			.responceBlockDescription {
+				font-size: 14px;
+				font-weight: 300;
 			}
     `;
 		this.shadow.appendChild(style);
@@ -326,11 +344,17 @@ class FileUploader extends HTMLElement {
 		submitButton.disabled = true;
 		form.appendChild(submitButton);
 
-		const responceBlock = document.createElement("div");
-		responceBlock.className = "responceBlock";
-		responceBlock.style.color = "black";
+		const responseBlock = document.createElement("div");
+		responseBlock.className = "responceBlock";
+		const responseBlockHeading = document.createElement("h2");
+		responseBlockHeading.className = "responceBlockHeading";
+		const responseBlockDescription = document.createElement("span");
+		responseBlockDescription.className = "responceBlockDescription";
 
-		form.appendChild(responceBlock);
+		responseBlock.appendChild(responseBlockHeading);
+		responseBlock.appendChild(responseBlockDescription);
+
+		formContainer.appendChild(responseBlock);
 
 		this.shadow.appendChild(formContainer);
 
@@ -382,6 +406,7 @@ class FileUploader extends HTMLElement {
 			e.preventDefault();
 
 			submitButton.disabled = true;
+			fileInput.disabled = true;
 			if (this.isTitleWriten && fileInput.files && fileInput.files.length > 0) {
 				this.handleUpload(e, fileInput.files[0], fileNameInput.value);
 
@@ -500,18 +525,28 @@ class FileUploader extends HTMLElement {
 				} else {
 					clearInterval(progressInterval);
 				}
-			}, 2);
+			}, 1);
 		};
 
 		// Кастомный ивент для отображения ответа от API
-		this.addEventListener("responceBlock", () => {
-			responceBlock.textContent = JSON.stringify(this.apiRes);
-			console.log(this.formSendStatus);
+		this.addEventListener("responseBlock", () => {
+			responseBlockDescription.textContent = JSON.stringify(this.apiRes);
 
-			if (this.formSendStatus === false) {
-				formContainer.style.backgroundColor =
-					"linear-gradient(to bottom, #F05C5C, #8F8DF4);";
+			if (this.formSendStatus) {
+				responseBlockHeading.textContent = "Файл успешно загружен";
+				formContainer.style.background =
+					"linear-gradient(to bottom, #5F5CF0, #8F8DF4)";
+			} else {
+				responseBlockHeading.textContent = "Ошибка в загрузке файла";
+				formContainer.style.background =
+					"linear-gradient(to bottom, #F05C5C, #8F8DF4)";
 			}
+
+			headlineWrapper.style.display = "none";
+			fileNameInputWrapper.style.display = "none";
+			form.style.display = "none";
+
+			responseBlock.style.display = "flex";
 		});
 	}
 
@@ -531,7 +566,7 @@ class FileUploader extends HTMLElement {
 
 	// Отправка файла
 	private async handleUpload(e: Event, file: File, fileName: string) {
-		const responceBlock = new CustomEvent("responceBlock");
+		const responseBlock = new CustomEvent("responseBlock");
 		try {
 			if (!file || !fileName) {
 				throw new Error();
@@ -571,7 +606,7 @@ class FileUploader extends HTMLElement {
 			this.formSendStatus = false;
 			return;
 		} finally {
-			this.dispatchEvent(responceBlock);
+			this.dispatchEvent(responseBlock);
 		}
 	}
 }
